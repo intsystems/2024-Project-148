@@ -2,7 +2,7 @@
 \usepackage{arxiv}
 
 \usepackage[utf8]{inputenc}
-\usepackage[english, russian]{babel}
+\usepackage[russian, english]{babel}
 \usepackage[T1]{fontenc}
 \usepackage{url}
 \usepackage{booktabs}
@@ -16,22 +16,14 @@
 
 
 
-\title{A template for the \emph{arxiv} style}
+\title{Weighted cocherence as topic models' interpretability measure}
 
-\author{ David S.~Hippocampus\thanks{Use footnote for providing further
-		information about author (webpage, alternative
-		address)---\emph{not} for acknowledging funding agencies.} \\
-	Department of Computer Science\\
-	Cranberry-Lemon University\\
-	Pittsburgh, PA 15213 \\
-	\texttt{hippo@cs.cranberry-lemon.edu} \\
-	%% examples of more authors
-	\And
-	Elias D.~Striatum \\
-	Department of Electrical Engineering\\
-	Mount-Sheikh University\\
-	Santa Narimana, Levand \\
-	\texttt{stariate@ee.mount-sheikh.edu} \\
+\author{ 
+\textbf{Zhgutov K. D.} (\texttt{zhgutov.kd@phystech.edu}) \\
+\textbf{Alekseev V. A.} (\texttt{wasya.alekseev@gmail.com}) \\
+\textbf{Vorontsov K. V.} (\texttt{vokov@forecsys.ru}) \\
+\\
+Moscow Institute of Physics and Technology
 	%% \AND
 	%% Coauthor \\
 	%% Affiliation \\
@@ -50,106 +42,62 @@
 }
 \date{}
 
-\renewcommand{\shorttitle}{\textit{arXiv} Template}
+\renewcommand{\shorttitle}{Weighted cocherence as topic models' interpretability measure}
 
 %%% Add PDF metadata to help others organize their library
 %%% Once the PDF is generated, you can check the metadata with
 %%% $ pdfinfo template.pdf
 \hypersetup{
-pdftitle={A template for the arxiv style},
+pdftitle={Weighted cocherence as topic models' interpretability measure},
 pdfsubject={q-bio.NC, q-bio.QM},
 pdfauthor={David S.~Hippocampus, Elias D.~Striatum},
-pdfkeywords={First keyword, Second keyword, More},
+pdfkeywords={topic modeling, topic coherence, topic interpretability, topic model, BigARTM, text analysis, machine learning},
 }
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-	\lipsum[1]
+Topic modeling is very useful for analyzing text data. It can be used to analyze large collection of text data such as articles, reviews, social media, and others. This helps in clusterization documents by topic, extracting keywords, and identifying patterns in the data. There are a lot of automatically calculated criteria of informativeness of thematic models. One of these criteria is coherence. But the problem with coherence is that it does not take into account most of the text in the calculation, which makes evaluating the quality of the topic by this critera unreliable. The aim is to propose a new method for calculating coherence that takes into account the distribution of the topic throughout the text.
 \end{abstract}
 
 
-\keywords{First keyword \and Second keyword \and More}
+\keywords{topic modeling \and topic coherence \and topic interpretability \and topic model \and BigARTM \and text analysis \and machine learning}
 
 \section{Introduction}
-\lipsum[2]
-\lipsum[3]
+Topic modeling is a text data analysis method that automatically identifies hidden topics in large collections of text data. Topic models are used in information retrieval, documents’ categorization, social networks’ data analysis, recommendation systems, exploratory search and other areas.
 
-\section{Headings: first level}
-\label{sec:headings}
+Interpretability is a key characteristic of an effective topic model. But interpretability of the topic model is a poorly formalized requirement. Informally, it means that according to the lists of the most frequent words of the topic, the expert can understand what this topic is about and give it an adequate name. Expert approaches are necessary at the research stage, but they make it difficult to automatically build good topic model.
 
-\lipsum[4] See Section \ref{sec:headings}.
+It was previously shown [2] that among the quality criteria calculated automatically from a collection, consistency or coherence correlates best with expert estimates of interpretability. However, the previously proposed methods of calculating coherence have a fundamental limitation. They take into account the distribution of only a very small number of words, which leads to a significant loss of accuracy.
 
-\subsection{Headings: second level}
-\lipsum[5]
-\begin{equation}
-	\xi _{ij}(t)=P(x_{t}=i,x_{t+1}=j|y,v,w;\theta)= {\frac {\alpha _{i}(t)a^{w_t}_{ij}\beta _{j}(t+1)b^{v_{t+1}}_{j}(y_{t+1})}{\sum _{i=1}^{N} \sum _{j=1}^{N} \alpha _{i}(t)a^{w_t}_{ij}\beta _{j}(t+1)b^{v_{t+1}}_{j}(y_{t+1})}}
-\end{equation}
+This study aims to advance coherence calculation techniques by exploring new quality criteria for topic models that take into account the distribution of topics throughout the text. The research compares these new criteria with existing methods and proposes a methodology for assessing the interpretability of topics.
 
-\subsubsection{Headings: third level}
-\lipsum[6]
+\section{Problem statement}
 
-\paragraph{Paragraph}
-\lipsum[7]
+Let $D$ denote a set (collection) of texts and $W$ denote a set (vocabulary) of all terms from these texts. Each term can represent a single word as well as a key phrase. Each document $d \in D$ is a sequence of $n_d$ terms $(w_1, \dots, w_n)$ from the vocabulary $W$. Each term might appear multiple times in the same document.
 
+Assume that each term occurrence in each document refers to some latent topic from a finite set of topics T. Text collection is considered to be a sample of triples $(w_i,d_i,t_i),\, {i=1,\ldots ,n} $ drawn independently from a discrete distribution $p(w,d,t)$ over a finite space $W\times D \times T$. Term w and document $d$ are observable variables, while topic t is a latent (hidden) variable. Following the “bag of words” model, we represent each document by a subset of terms $d\subset W$ and the corresponding integers $n_{dw}$, which count how many times the term $w$ appears in the document $d$.
 
+Conditional independence is an assumption that each topic generates terms regardless of the document: $p(w\ {\vert }\ t) = p(w\ {\vert }\ d,t)$. According to the law of total probability and the assumption of conditional independence
 
-\section{Examples of citations, figures, tables, references}
-\label{sec:others}
+$\begin{aligned} p(w\ {\vert }\ d) = \sum _{t\in T} p(t\ {\vert }\ d)\, p(w\ {\vert }\ t)\end{aligned}$ (1)
 
-\subsection{Citations}
-Citations use \verb+natbib+. The documentation may be found at
-\begin{center}
-	\url{http://mirrors.ctan.org/macros/latex/contrib/natbib/natnotes.pdf}
-\end{center}
+The probabilistic model (1) describes how the collection D is generated from the known distributions $p(t\ {\vert }\ d)$ and $p(w\ {\vert }\ t)$. Learning a topic model is an inverse problem: to find distributions $p(t\ {\vert }\ d)$ and $p(w\ {\vert }\ t)$ given a collection $D$. This problem is equivalent to finding an approximate representation of counter matrix
 
-Here is an example usage of the two main commands (\verb+citet+ and \verb+citep+): Some people thought a thing \citep{kour2014real, hadash2018estimate} but other people thought something else \citep{kour2014fast}. Many people have speculated that if we knew exactly why \citet{kour2014fast} thought this\dots
+$\begin{aligned} F = \bigl ( \hat{p}_{wd} \bigr )_{W{\times }D}, \quad \hat{p}_{wd} = \hat{p}(w\ {\vert }\ d) = \tfrac{n_{dw}}{n_d}  \end{aligned}$ (2)
 
-\subsection{Figures}
-\lipsum[10]
-See Figure \ref{fig:fig1}. Here is how you add footnotes. \footnote{Sample of the first footnote.}
-\lipsum[11]
+as a product $F \approx \Phi \Theta $ of two unknown matrices—the matrix $\Phi$ of term probabilities for the topics and the matrix $\Theta$ of topic probabilities for the documents:
 
-\begin{figure}
-	\centering
-	\includegraphics[width=0.5\textwidth]{../figures/log_reg_cs_exp.eps}
-	\caption{Sample figure caption.}
-	\label{fig:fig1}
-\end{figure}
+$\begin{aligned} \begin{array}{rlrlrl} \Phi &{}= (\phi _{wt})_{W{\times }T},\;\;\;\; &{} \phi _{wt} &{}= p(w\ {\vert }\ t),\;\;\;\; &{} \phi _t &{}= (\phi _{wt})_{w\in W} \\ \Theta &{}= (\theta _{td})_{T{\times }D},\;\;\;\; &{} \theta _{td} &{}= p(t\ {\vert }\ d),\;\;\;\; &{} \theta _d &{}= (\theta _{td})_{t\in T}\end{array} \end{aligned}$
 
-\subsection{Tables}
-See awesome Table~\ref{tab:table}.
+Lets define weithed coherency
 
-The documentation for \verb+booktabs+ (`Publication quality tables in LaTeX') is available from:
-\begin{center}
-	\url{https://www.ctan.org/pkg/booktabs}
-\end{center}
+$coh_t = \frac {\sum_{u, v} \text{rel}_t(u, v) \text{coh}(u, v)} {\sum_{u, v}  \text{rel}_t(u, v)}$
+
+Our goal is to find functions $\text{rel}_t(u, v), \text{coh}(u, v)$ that shows best correlation with human estimations of topic interpretability.  
 
 
-\begin{table}
-	\caption{Sample table title}
-	\centering
-	\begin{tabular}{lll}
-		\toprule
-		\multicolumn{2}{c}{Part}                   \\
-		\cmidrule(r){1-2}
-		Name     & Description     & Size ($\mu$m) \\
-		\midrule
-		Dendrite & Input terminal  & $\sim$100     \\
-		Axon     & Output terminal & $\sim$10      \\
-		Soma     & Cell body       & up to $10^6$  \\
-		\bottomrule
-	\end{tabular}
-	\label{tab:table}
-\end{table}
-
-\subsection{Lists}
-\begin{itemize}
-	\item Lorem ipsum dolor sit amet
-	\item consectetur adipiscing elit.
-	\item Aliquam dignissim blandit est, in dictum tortor gravida eget. In ac rutrum magna.
-\end{itemize}
 
 
 \bibliographystyle{unsrtnat}

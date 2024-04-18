@@ -1,26 +1,57 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-class ChainsInterpretability:
-    def __init__(self, chains):
-        super().__init__()
+class ChainsConsistency:
+    def __init__(self, chains, modality='lemmatized'):
         self.chains = chains
 
     def _get_topics(self, model):
         return list(model.get_phi().columns)
     
-    def _calculate_interpretability(self, topics, phi):
-        data = [[] for _ in range(len(topics))]
+    def _calculate_interpretability(self, topics, phi, n_w, n_t, draw_distribution):
+        Ct = [[] for _ in range(len(topics))]
         for chain in self.chains:
-            probs = phi.loc[chain].to_numpy()
-            likelyhood = np.log(probs).sum(axis=0)
-            if np.argmax(likelyhood) == 20:
-                print(chain)
-            data[np.argmax(likelyhood)].append(np.max(likelyhood))
-        return pd.Series([np.mean(row) if row.size else -np.inf for row in data], index=topics)
+            p_tw = (phi.loc[chain].to_numpy() / n_t.to_numpy()).T * n_w.loc[chain].to_numpy()
+            p_tC = np.mean(p_tw, axis=-1)
+            Ct[np.argmax(p_tC)].append(np.max(p_tC))
 
-    def call(self, model):
+        if draw_distribution:
+            plt.xlabel('Topics')
+            plt.ylabel('Count of chains')
+            plt.xticks(rotation=90)
+            plt.bar(topics, [len(row) for row in Ct])
+        return pd.Series([np.mean(row) if len(row) else -np.inf for row in Ct], index=topics)
+
+    def visualize(self, model, modality='@lemmatized'):
         topics = self._get_topics(model)
-        phi = model.get_phi()
-        result = self._calculate_interpretability(topics, phi)
+        phi = model.get_phi().loc[modality]
+        n_wt = model._model.get_phi(model_name=model._model.model_nwt)
+        p_wt = model._model.get_phi(model_name=model._model.model_pwt)
+
+        n_w = n_wt.sum(axis=1)
+        n_t = np.mean((n_wt / p_wt).replace([np.inf, -np.inf], np.nan).dropna(),axis=0)
+        
+
+        plt.subplots(1, 2, figsize=(10, 3))
+        plt.subplot(1, 2, 1)
+        result = self._calculate_interpretability(topics, phi, n_w, n_t, True)
+
+        plt.subplot(1, 2, 2)
+        plt.xlabel('Topics')
+        plt.ylabel(r'$cons_t$')
+        plt.xticks(rotation=90)
+        plt.bar(topics, [i if i != -np.inf else 0 for i in result])
+        plt.show()
+
+
+    def call(self, model, modality='@lemmatized'):
+        topics = self._get_topics(model)
+        phi = model.get_phi().loc[modality]
+        n_wt = model._model.get_phi(model_name=model._model.model_nwt)
+        p_wt = model._model.get_phi(model_name=model._model.model_pwt)
+
+        n_w = n_wt.sum(axis=1)
+        n_t = np.mean((n_wt / p_wt).replace([np.inf, -np.inf], np.nan).dropna(),axis=0)
+        result = self._calculate_interpretability(topics, phi, n_w, n_t, False)
         return list(result)

@@ -3,10 +3,10 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage[russian, english]{babel}
-\usepackage[T1]{fontenc}
+\usepackage[T2A]{fontenc}
 \usepackage{url}
 \usepackage{booktabs}
-\usepackage{amsfonts}
+\usepackage{amsmath,amsfonts}
 \usepackage{nicefrac}
 \usepackage{microtype}
 \usepackage{lipsum}
@@ -16,7 +16,7 @@
 
 
 
-\title{Weighted cocherence as topic models' interpretability measure}
+\title{Weighted coherence as topic models' interpretability measure}
 
 \author{ 
 \textbf{Zhgutov K. D.} (\texttt{zhgutov.kd@phystech.edu}) \\
@@ -58,71 +58,210 @@ pdfkeywords={topic modeling, topic coherence, topic interpretability, topic mode
 \maketitle
 
 \begin{abstract}
-Topic modeling is very useful for analyzing text data. It can be used to analyze large collection of text data such as articles, reviews, social media, and others. This helps in clusterization documents by topic, extracting keywords, and identifying patterns in the data. There are a lot of automatically calculated criteria of informativeness of thematic models. One of these criteria is coherence. But the problem with coherence is that it does not take into account most of the text in the calculation, which makes evaluating the quality of the topic by this critera unreliable. The aim is to propose a new method for calculating coherence that takes into account the distribution of the topic throughout the text.
+Topic modeling is very useful for analyzing text data. 
+It can be used to analyze large collection of text data such as articles, reviews, social media, and others. 
+This helps in clusterization documents by topic, extracting keywords, and identifying patterns in the data. 
+There are a lot of automatically calculated criteria of informativeness of topic models. 
+One of these criteria is coherence. 
+But the problem with coherence is that it does not take into account most of the text in the calculation but only 10 most popular words, which makes evaluating the quality of the topic by this critera unreliable. 
+Alternative approach called 
+The aim is to propose a new method for calculating coherence that takes into account the distribution of the topic throughout the text.
 \end{abstract}
 
 
-\keywords{topic modeling \and topic coherence \and topic interpretability \and topic model \and BigARTM \and text analysis \and machine learning}
+\keywords{topic modeling \and topic coherence \and topic interpretability \and topic model \and BigARTM \and text analysis}
 
 \section{Introduction}
-Topic modeling is a text data analysis method that automatically identifies hidden topics in large collections of text data. Topic models are used in information retrieval, documents’ categorization, social networks’ data analysis, recommendation systems, exploratory search and other areas.
+Topic modeling is a text data analysis method that automatically identifies hidden topics in large collections of text data. 
+Topic models are used in information retrieval \cite{vulic2013cross}, 
+documents’ categorization \cite{zhou2009text}, 
+social networks’ data analysis \cite{varshney2014modeling}, recommendation systems \cite{yeh2010recommendation}, 
+exploratory search \cite{ianina2018multi}
+and other areas not related to texts \cite{la2015probabilistic}.
 
-Interpretability is a key characteristic of an effective topic model \cite{ReadingTeaLeaves}. But interpretability of the topic model is a poorly formalized requirement. Informally, it means that according to the lists of the most frequent words of the topic, the expert can understand what this topic is about and give it an adequate name. Expert approaches are necessary at the research stage, but they make it difficult to automatically build good topic model.
+Interpretability is a key characteristic of an useful topic model \cite{chang2009reading}. 
+But interpretability of the topic model is a poorly formalized requirement. 
+Informally, it means that according to the lists of the most frequent words of the topic, the expert can understand what this topic is about and give it an adequate name. 
+Expert approaches are necessary at the research stage, but they make it difficult to automatically build good topic model.
 
-It was previously shown \cite{NewmanCoherency} that among the quality criteria calculated automatically from a collection, consistency or coherence correlates best with expert estimates of interpretability. However, the previously proposed methods of calculating coherence have a fundamental limitation. They take into account the distribution of only a very small number of words, which leads to a significant loss of accuracy.
+It was previously shown \cite{newman-etal-2010-automatic} that among the quality criteria calculated automatically from a collection, \textit{coherence} or consistency   correlates best with expert estimates of interpretability.
+However, the existing methods for calculating coherence have a ``fundamental limitation'' \cite{alekseev2018intra}. These methods consider the distribution of only a small subset of words, resulting in a significant loss of accuracy. As an alternative, an approach known as Intra-text coherence has been proposed \cite{alekseev2018intra}, which considers all words but rejects the concept of PMI.
 
-This study aims to advance coherence calculation techniques by exploring new quality criteria for topic models that take into account the distribution of topics throughout the text. The research compares these new criteria with existing methods and proposes a methodology for assessing the interpretability of topics.
+This study aims to enhance coherence calculation techniques by investigating new quality criteria for topic models that incorporate both the distribution of topics across the text and the concept of PMI as a measure of word coherence.
+The research compares these new criteria with existing methods and proposes a methodology for assessing the interpretability of topics.
 
 \section{Problem statement}
 
-\subsection{Introduction to topic modeling}
+\subsection{Introduction to topic modeling \cite{vorontsov2023BigARTM}}
 
-Let $D$ denote a set (collection) of texts and $W$ denote a set (vocabulary) of all terms from these texts. Each term can represent a single word as well as a key phrase. Each document $d \in D$ is a sequence of $n_d$ terms $(w_1, \dots, w_n)$ from the vocabulary $W$. Each term might appear multiple times in the same document.
+Let $D$ denote a set (collection) of texts and $W$ denote \emph{vocabulary}, which is a set of all terms from these texts. 
+Each term can represent a single word as well as a key phrase. 
+Each document $d \in D$ is a sequence of $n_d$ terms $(w_1, \dots, w_n)$ from the vocabulary $W$. 
+Each term might appear multiple times in the same document.
 
-Assume that each term occurrence in each document refers to some latent topic from a finite set of topics T. Text collection is considered to be a sample of triples $(w_i,d_i,t_i),\, {i=1,\ldots ,n} $ drawn independently from a discrete distribution $p(w,d,t)$ over a finite space $W\times D \times T$. Term w and document $d$ are observable variables, while topic t is a latent (hidden) variable. Following the “bag of words” model, we represent each document by a subset of terms $d\subset W$ and the corresponding integers $n_{dw}$, which count how many times the term $w$ appears in the document $d$.
+Assume that each term occurrence in each document refers to some latent topic from a finite set of topics $T$. 
+Text collection is considered to be a sample of triples $(w_i,d_i,t_i),\, {i=1,\ldots ,n} $ drawn independently from a discrete distribution $p(w,d,t)$ over a finite space $W\times D \times T$. 
+Term $w$ and document $d$ are observable variables, while topic $t$ is a latent (hidden) variable. 
+Following the ``bag of words'' model, we represent each document by a subset of terms $d\subset W$ and the corresponding integers $n_{dw}$, which count how many times the term $w$ appears in the document $d$.
 
-Conditional independence is an assumption that each topic generates terms regardless of the document: $p(w\ {\vert }\ t) = p(w\ {\vert }\ d,t)$. According to the law of total probability and the assumption of conditional independence
+Conditional independence is an assumption that each topic generates terms regardless of the document: $p(w\ {\vert }\ t) = p(w\ {\vert }\ d,t)$. 
+According to the law of total probability and the assumption of conditional independence
 
-$\begin{aligned} p(w\ {\vert }\ d) = \sum _{t\in T} p(t\ {\vert }\ d)\, p(w\ {\vert }\ t)\end{aligned}$ (1)
+\begin{equation}
+ \label{eq:1}
+ p(w\ {\vert }\ d) = \sum _{t\in T} p(w\ {\vert }\ t)\, p(t\ {\vert }\ d)
+\end{equation}
 
-The probabilistic model (1) describes how the collection D is generated from the known distributions $p(t\ {\vert }\ d)$ and $p(w\ {\vert }\ t)$. Learning a topic model is an inverse problem: to find distributions $p(t\ {\vert }\ d)$ and $p(w\ {\vert }\ t)$ given a collection $D$. This problem is equivalent to finding an approximate representation of counter matrix
-
-$\begin{aligned} F = \bigl ( \hat{p}_{wd} \bigr )_{W{\times }D}, \quad \hat{p}_{wd} = \hat{p}(w\ {\vert }\ d) = \tfrac{n_{dw}}{n_d}  \end{aligned}$ (2)
+The probabilistic model (\ref{eq:1}) describes how the collection $D$ is generated from some distributions $p(t\ {\vert }\ d)$ and $p(w\ {\vert }\ t)$. 
+Learning a topic model is an inverse problem: to find distributions $p(t\ {\vert }\ d)$ and $p(w\ {\vert }\ t)$ given a collection $D$.
+This problem is equivalent to finding an approximate representation of counter matrix
+\begin{equation}
+F = \bigl ( \hat{p}_{wd} \bigr )_{W{\times }D}, \quad \hat{p}_{wd} = \hat{p}(w\ {\vert }\ d) = \tfrac{n_{dw}}{n_d}
+\end{equation}
 
 as a product $F \approx \Phi \Theta $ of two unknown matrices—the matrix $\Phi$ of term probabilities for the topics and the matrix $\Theta$ of topic probabilities for the documents:
 
 $\begin{aligned} \begin{array}{rlrlrl} \Phi &{}= (\phi _{wt})_{W{\times }T},\;\;\;\; &{} \phi _{wt} &{}= p(w\ {\vert }\ t),\;\;\;\; &{} \phi _t &{}= (\phi _{wt})_{w\in W} \\ \Theta &{}= (\theta _{td})_{T{\times }D},\;\;\;\; &{} \theta _{td} &{}= p(t\ {\vert }\ d),\;\;\;\; &{} \theta _d &{}= (\theta _{td})_{t\in T}\end{array} \end{aligned}$
 
-\subsection{Weithed coherency}
+\subsection{Coherence}
 
-Let us define weighted coherency as 
+A topic is called coherent if the most frequent topics of a given topic are often found side by side in collection documents. 
+The average coherence of topics is considered a good measure of the interpretability of a thematic model \cite{newman-etal-2010-automatic}.
 
-$coh_{t_0} = \frac {\sum_{u, v} \text{rel}_{t_0}(u, v) \text{coh}(u, v)} {\sum_{u, v}  \text{rel}_{t_0}(u, v)}$
+$n(u, v) = \sum\limits_{d = 1}^{|D|} \sum\limits_{i = 1}^{N_d} \sum\limits_{j = 1}^{N_d} [0 < |i - j| \leq k] [w_{di} = u] [w_{dj} = v]$
 
-Our objective is to identify functions $\text{rel}_t(u, v), \text{coh}(u, v)$  that exhibit the strongest correlation with human evaluations of topic interpretability. As previously stated, topic interpretability is a vaguely defined concept. For the purposes of this article, interpretability will be defined as follows.
+$n(u) = \sum\limits_{w \in W}{n(u, w)}$
 
-Let C represent the set of word chains. A word chain is a subset of a document consisting of connected words from the same topic. Unfortunately, there is no more precise definition available.
+$n = \sum\limits_{w \in W}{n(w)}$
 
-So topic interpretability of $t_0$ will be
+$p(u) = \frac{n(u)}{n}$
 
-$I_{t_0} = \sum_{c \in C} \left(\sum_{w \in c} \log{\phi_{wt_0}}\right) [t_0 = argmax_{t \in T} \sum_{w \in c} \log{\phi_{wt_0}}]$
+$p(u, v) = \frac{n(u, v)}{n}$
+
+$\text{PMI} = \log_2 \frac {p(u, v)} {p(u) p(v)}$
+
+\[
+\text{coh}_{t_0} = \frac {2} {k (k - 1)} \sum_{i = 1}^{k} \sum_{j = i+1}^{k} \text{PMI}(w_i, w_j)
+\]
+
+Despite the fact that this approach shows good correlation results with human scores, we will improve it by increasing the number of words that are taken into account when calculating indicators.
+
+\subsection{Weighted coherence}
+
+To generalize previous method let us define weighted coherence as 
+\[
+\text{coh}_{t_0} = \frac {\sum_{u, v} \text{rel}_{t_0}(u, v) \text{coh}(u, v)} {\sum_{u, v}  \text{rel}_{t_0}(u, v)}
+\]
+
+Our objective is to identify functions $\text{rel}_t(u, v), \text{coh}(u, v)$  that exhibit the strongest correlation with human evaluations of topic consistency  with topic interpretability. 
+
+\subsection{Consistency  with word chains}
+
+As previously stated, topic interpretability is a vaguely defined concept. 
+For the purposes of this article, as measure of interpretability we will use  consistency  with marked chains.
+
+Let $C_{di}$ represent $i$-th word chain from document $d$. 
+A word chain is a subset of a document consisting of connected words from the same topic.
+
+\[
+p(t \vert C) = \sum_{ w\in C} p(t |w) p(w |C) = \text{mean} \ p(t|w)
+\],
+
+where $p(t \vert w) = p(w \vert t) \frac {p(t)} {p(w)} = \phi_{wt} \frac {n_t} {n_w}$
+
+$C(t) = \{C_{di} \ \vert \  t = \text{argmax}_{t} p (t \vert C_{di}) \}$ - set of word chains that are  consisted to topic $t$.
+\[
+\text{cons}_{t_0} = \text{mean}_{C_{di} \in C(t_0)} \ p(t \vert C_{di})
+\]
+
+So main idea of consistency  with word chains is that instead of estimate each topic of topic models we build  perfect topic model and compare it's text markup with markup of our model.
 
 \section{Computational experiment}
-\subsection{Data}
+\subsection{Data and frameworks}
+\begin{enumerate}
+    \item 20 Newsgroups Dataset: This dataset comprises documents from 20 different newsgroups, with each file containing one document per newsgroup.
+    \item Small dataset of word chains builded manually from previous dataset.
+\end{enumerate}
 
-1. 20 Newsgroups Dataset: This dataset comprises documents from 20 different newsgroups, with each file containing one document per newsgroup.
 
-2. Lenta.Ru News Dataset: This dataset consists of news articles sourced from the website Lenta.ru.
+%2. Lenta.Ru News Dataset: This dataset consists of news articles sourced from the website Lenta.ru.
 
-Additionally, it is essential to identify and extract word segments from certain documents to assess topic interpretability. Acquiring these specific data segments poses a challenge for the experiment due to the lack of a defined source.
+Additionally, it is essential to identify and extract word segments from certain documents to assess topic interpretability. 
+Acquiring these specific data segments poses a challenge for the experiment due to the lack of a defined source.
 
 \subsection{Plan of experiment}
 
-1. Utilize TopicNet to construct a topic model.
+\begin{enumerate}
+    \item Construct a topic model.
+    \item Compute the metrics $\text{coh}^{(i)}_t$  for analysis..
+    \item Determine the Spearman correlation between the consistency of word chains  $\text{cons}_t$ and the values of metrics $\text{coh}^{(i)}_t$.
+\end{enumerate}
 
-2. Compute the metrics $coh^{(i)}_t$  for analysis..
+We will create topic model using the TopicNet library, which is a high-level framework for BigARTM.
+Model consists of 11 topics (10 main and 1 background). Modality which was used to train model and compute metrics is 'lemmatized'.
 
-3. Determine the Spearman correlation between the interpretability of topics $I_t$ and the values of metrics $coh^{(i)}_t$.
+\subsection{Theory}
+
+The main part of our experiment is to explore different options of $\text{rel}_t$ (relevance), $\text{coh}$ (coherence). 
+
+\textit{Coherence} is responsible for the connectedness of words, that is, the non-random occurrence of these words in the same context.
+Let's take  PMI \cite{newman-etal-2010-automatic} as the basis for coherence. PMI (especially in its positive pointwise mutual information variant) has been described as ``one of the most important concepts in NLP'' \cite{jurafskyspeech}. Originally, PMI has ``a well-known tendency to give higher scores to low-frequency events'' \cite{role2011handling}. So we will use some modidications of it.
+
+\begin{itemize}
+     \item PPMI = $(\text{PMI})_+$
+     % \item $(\text{PMI} - \delta)_+$ 
+     \item NPMI = 1 - $\frac{\text{PMI}} {log_2(p(u, v))}$
+     \item $\text{PMI}^k = \log_2 \frac {p^k(u, v)} {p(u) p(v)}$, where $k=2, 3$
+     
+ \end{itemize}
+
+\textit{Relevance} is an indicator that describes how well a pair of words $(u, v)$ correspond to a certain topic. 
+So we will look for a symmetric function depending on the probabilities $\phi_{ut}$ and $\phi_{vt}$.
+
+Let $\text{pos}_t(u)$ denote number of $\phi_{ut}$ in variational series of $\phi_{*t}$ and  $\text{pos}_u(t)$ denote number of $\phi_{ut}$ in variational series of $\phi_{u*}$.
+
+\begin{itemize}
+    \item $[\text{pos}_t(u) \le k][\text{pos}_t(u) \le k]$, where $k = 10, 20, 50, 100$. That variant responds to Newman's coherence.
+    \item $\phi_{ut} \phi_{vt}$
+    \item $\sqrt{\phi_{ut} \phi_{vt}}$
+    \item $[\phi_{ut} \phi_{vt} \ge \varepsilon]$
+    \item $[\phi_{ut} > 0] [\phi_{vt} > 0] (\phi_{ut} + \phi_{vt})$
+    % \item $[t \ge \text{TopThemes}(u, k)][t \ge \text{TopThemes}(v, k)]$, where $k = 1, 2$
+    % \item $\frac {1} {\text{TopThemes}(u, k)} \frac {1} {\text{TopThemes}(u, k)}$
+     
+\end{itemize}
+
+\subsection{Results of experiment}
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{ccc}
+        coh & rel & correaltion \\
+        PMI & $[\text{pos}_t(u) \le 10][\text{pos}_t(u) \le 10]$ & 0.62 \\
+        PMI & $[\text{pos}_t(u) \le 20][\text{pos}_t(u) \le 20]$ & 0.49 \\
+        PMI & $\phi_{ut} \phi_{vt}$ & 0.52 \\
+        PPMI & $\phi_{ut} \phi_{vt}$ & 0.88 \\
+        NPMI & $\phi_{ut} \phi_{vt}$ & -0.52 \\
+        PMI & $\sqrt{\phi_{ut} \phi_{vt}}$ & 0.54 \\
+        PPMI & $\sqrt{\phi_{ut} \phi_{vt}}$ & 0.42 \\
+        NPMI & $\sqrt{\phi_{ut} \phi_{vt}}$ & 
+        -0.55 \\
+        PMI & $[\phi_{ut} > 0] [\phi_{vt} > 0] (\phi_{ut} + \phi_{vt})$ & 0.82 \\
+        PPMI & $[\phi_{ut} > 0] [\phi_{vt} > 0] (\phi_{ut} + \phi_{vt})$ & 0.68 \\
+        NPMI & $[\phi_{ut} > 0] [\phi_{vt} > 0] (\phi_{ut} + \phi_{vt})$ & 
+        -0.83 \\
+        PMI & $[\phi_{ut} \phi_{vt} \ge \varepsilon]$ & 0.32 \\
+        PPMI & $[\phi_{ut} \phi_{vt} > \varepsilon]$ & 0.33 \\
+        NPMI & $[\phi_{ut} \phi_{vt} \ge \varepsilon]$ & -0.32 \\
+    \end{tabular}
+
+    \caption{Correaltion of metrics}
+    \label{tab:my_label}
+\end{table}
+
+\section{Conclusion}
+This paper introduce an alternative method of topic model's interpretability measuring. 
+As computational experiment shows, metrics that based on weithed coherency demonstrate  a higher correlation with the consistency of word chains compared to the traditional top word coherence. 
 
 \bibliographystyle{plain}
 \bibliography{references}
